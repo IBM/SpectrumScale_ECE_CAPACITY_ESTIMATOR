@@ -5,7 +5,7 @@ This tool calculates the effective capacity of Spectrum Scale Native RAID system
  * Further tests to compare from real capacity vs calculated to tune the tool
 
 **PREREQUISITES:** Before running this tool you **must** fulfill the prerequisites:
- * python 2 (not tested on python 3, might work)
+ * python installed in the system (version 2 or 3)
  * User must have understanding of Spectrum Scale Native RAID
 
 The tool requires four parameters to be passed on when invoking them:
