@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 gnr_capacity_estimator - estimate usable file system capacity for a given
 Spectrum Scale GNR configuration
@@ -14,7 +14,7 @@ import json
 
 
 # This script version, independent from the JSON versions
-GCE_VERSION = "1.0"
+GCE_VERSION = "1.2"
 
 # GIT URL
 GITREPOURL = "https://github.com/IBM/SpectrumScale_GNR_CAPACITY_ESTIMATOR"
@@ -97,7 +97,7 @@ def btotb(bytes):
 # for ECE see /usr/lpp/mmfs/data/cst/compSpec-scaleOut.stanza
 # todo: support ESS value
 AULOGSZ = tob(3, 'GiB')    # 3221225472
-LOGHOMESZ = tob(2, 'GiB')  # 2147483648
+LOGHOMESZ = tob(32, 'GiB')  # 34359738368
 
 
 # see perseus wiki - add link
@@ -164,7 +164,7 @@ def get_checksum_granularity(blocksize, code, disktype):
 def get_gnrplan(nNodes, disksPerNode, sparePdisks, pdiskSize,
                 vdiskTrackSize,
                 dataStripsPerTrack, parityStripsPerTrack,
-                checksumGranularity, loghomes):
+                checksumGranularity, loghomes, setSize):
 
     # intermediate variable names for debug output
     debug_names = ['pdiskEndReserved', 'partitionSize', 'partitionsPerPdisk',
@@ -225,7 +225,7 @@ def get_gnrplan(nNodes, disksPerNode, sparePdisks, pdiskSize,
     partitionsAvailablePerLG = (nonLogUsablePartitionsPerLG -
                                 nonLogPartitionsUsedPerLG)
 
-    targetRawPartitionsPerVdisk = nonLogUsablePartitionsPerLG  # set-size=100%
+    targetRawPartitionsPerVdisk = nonLogUsablePartitionsPerLG * (setSize / 100) #--set-size = 10..100
     partitionGroupsPerVdisk = int(targetRawPartitionsPerVdisk /
                                   (dataStripsPerTrack + parityStripsPerTrack))
     rawPartitionsPerVdisk = (partitionGroupsPerVdisk *
@@ -356,6 +356,11 @@ def get_input():
                               'number of drives of spare capacity rather than '
                               'calculating based on the number of nodes in '
                               'the recovery group.'))
+    parser.add_argument('--set-size',
+                        type=int,
+                        default=100,
+                        required=False,
+                        help=('(Optional) Specifies the set size of a vdisk set definition. It defaults to 100 per cent. The value passed must be between 10 and 100'))
     parser.add_argument('-v', '--verbose', action='store_true',
                         default=False,
                         help=('Verbose output.'))
@@ -406,12 +411,16 @@ def get_input():
         args.pdisk_size_gib = float(fromb((args.pdisk_size_tb * 1000**4),
                                           'GiB'))
 
+    if args.set_size > 100 or args.set_size < 10:
+        print('ERROR: --set-size value must be between 10 and 100')
+        sys.exit(1)
+
     if args.verbose:
         DEBUG = True
 
     return (args.node_count, args.pdisk_per_node, args.pdisk_size_gib,
             args.block_size, args.erasure_code, args.include_loghome_vdisks,
-            args.disk_type, args.json_format, args.spare_drives)
+            args.disk_type, args.json_format, args.spare_drives, args.set_size)
 
 
 if __name__ == '__main__':
@@ -419,7 +428,7 @@ if __name__ == '__main__':
     show_header()
 
     (numNodes, pdisksPerNode, pdiskSize, blocksize, code,
-     loghomes, disktype, jsonfmt, spares) = get_input()
+     loghomes, disktype, jsonfmt, spares, setSize) = get_input()
 
     logdbg('Starting with debug enabled')
 
@@ -453,7 +462,7 @@ if __name__ == '__main__':
     gnrplan = get_gnrplan(numNodes, pdisksPerNode, spares, pdiskSize_bytes,
                           vdiskTrackSize_bytes,
                           dataStripsPerTrack, parityStripsPerTrack,
-                          checksumGranularity, loghomes)
+                          checksumGranularity, loghomes, setSize)
 
     (nonlog_usable_partitions, partitionSize, vdiskDataSize,
         vdiskRawSize) = gnrplan
@@ -487,10 +496,10 @@ if __name__ == '__main__':
               format(fromb(vdiskRawSize, 'GiB')))
         print('Vdisk user data capacity (GiB):     {:>28.0f}'.
               format(fromb(vdiskDataSize, 'GiB')))
-        print('Maximum file system size (set-size = 100%), '
-              '(GiB):  {:>12.0f}'.format(max_fs_capacity))
-        print('Maximum file system size (set-size = 100%), '
-              '(TB):   {:>12.2f}'.format(max_fs_capacity_tb))
+        print('Maximum file system size (set-size = {:3d}%), '
+              '(GiB):  {:>12.0f}'.format(setSize, max_fs_capacity))
+        print('Maximum file system size (set-size = {:3d}%), '
+              '(TB):   {:>12.2f}'.format(setSize, max_fs_capacity_tb))
         print('  [{0:.0f} GiB per vdisk,  2 vdisks per node, {1:} nodes]'.
               format(fromb(vdiskDataSize, 'GiB'), numNodes))
         print('')

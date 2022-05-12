@@ -19,9 +19,9 @@ The tool requires four parameters to be passed on when invoking them:
 The help includes the description of the optional parameters
 
 ```
-# ./gnr_capacity_estimator.py -h
+$ ./gnr_capacity_estimator.py -h
 
-IBM Spectrum Scale Native RAID Estimator version 1.0
+IBM Spectrum Scale Native RAID Estimator version 1.2
 This tool comes with no warranty of any kind
 
 Please check https://github.com/IBM/SpectrumScale_GNR_CAPACITY_ESTIMATOR for updates and other information
@@ -29,7 +29,8 @@ Please check https://github.com/IBM/SpectrumScale_GNR_CAPACITY_ESTIMATOR for upd
 usage: gnr_capacity_estimator.py [-h] -n NODE_COUNT -p PDISK_PER_NODE
                                  [-s PDISK_SIZE_GIB] [-t PDISK_SIZE_TB] -e
                                  ERASURE_CODE [-b BLOCK_SIZE] [-d DISK_TYPE]
-                                 [-x] [-j] [--spare-drives SPARE_DRIVES] [-v]
+                                 [-x] [-j] [--spare-drives SPARE_DRIVES]
+                                 [--set-size SET_SIZE] [-v]
 
 Spectrum Scale RAID Capacity Estimator
 
@@ -45,8 +46,8 @@ optional arguments:
   -t PDISK_SIZE_TB, --pdisk-size-tb PDISK_SIZE_TB
                         Size of each pdisk in TB (decimal).
   -e ERASURE_CODE, --erasure-code ERASURE_CODE
-                        Erasure code for vdisks, from ['4+2p', '8+3p', '8+2p',
-                        '4+3p'].
+                        Erasure code for vdisks, from dict_keys(['4+2p',
+                        '4+3p', '8+2p', '8+3p']).
   -b BLOCK_SIZE, --block-size BLOCK_SIZE
                         Blocksize, in MiB, from [1, 2, 4, 8, 16], (default 4).
   -d DISK_TYPE, --disk-type DISK_TYPE
@@ -60,7 +61,11 @@ optional arguments:
                         (Optional) If specified use this value as the number
                         of drives of spare capacity rather than calculating
                         based on the number of nodes in the recovery group.
+  --set-size SET_SIZE   (Optional) Specifies the set size of a vdisk set
+                        definition. It defaults to 100 per cent. The value
+                        passed must be between 10 and 100
   -v, --verbose         Verbose output.
+
 ```
 
 As example to run an estimation of an ECE system of 12 nodes that have 12 4 TB drives each and we plan to use 8+2p as erasure code:
